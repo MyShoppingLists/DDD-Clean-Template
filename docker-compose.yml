@@ -1,0 +1,42 @@
+version: '3'
+
+services:
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3.7.4-management-alpine
+    ports:
+      - 5672:5672
+      - 15672:15672
+
+  catalogue:
+    container_name: catalogue
+    restart: always
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+      - '8080:3000'
+    volumes:
+      - ./:/usr/src/app
+      - ignore:/usr/src/app/node_modules/
+    environment:
+      - PORT=3000
+      - MESSAGE_BUS=amqp://rabbitmq
+    links:
+      - rabbitmq
+      - catalogue-db
+    depends_on:
+      - catalogue-db
+
+  catalogue-db:
+    container_name: catalogue-db
+    build: ./app/db
+    ports:
+      - '5433:5432'
+    environment:
+      - POSTGRES_DB=Catalogue
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+
+volumes:
+  ignore:
